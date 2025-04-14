@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { DragControls } from 'three/examples/jsm/Addons.js';
+// @ts-ignore
 // @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
@@ -53,6 +55,20 @@ export default function Page() {
             new THREE.LineBasicMaterial({ color: 0x000000 })  
         );
         cube.add(wireframe);
+
+
+        const draggableObjects:THREE.Object3D[]=[cube]
+        const drageControls=new DragControls(draggableObjects,camera,renderer.domElement)
+
+        drageControls.addEventListener('dragstart',()=>{
+            controls.enabled=false
+        })
+
+        drageControls.addEventListener('dragend',()=>{
+            controls.enabled=true
+        })
+
+
 
         const handleClick = (event: MouseEvent) => {
             if (!mountRef.current) return
