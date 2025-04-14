@@ -32,8 +32,8 @@ export default function Page() {
         const mouse = new THREE.Vector2()
         
         const points: THREE.Vector3[] = []
-        const spheres: THREE.Mesh[] = []
-        let line: THREE.Line | null = null
+        const spheres: THREE.Mesh[]  = []
+        let line: THREE.Line | null  = null
 
         const pointsMaterial = new THREE.MeshBasicMaterial({color: 'red'})
         const lineMaterial = new THREE.LineBasicMaterial({color: 'white'})
