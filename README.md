@@ -10,3 +10,4 @@
 - If clicked more than two times, reset the points, line and distance to allow new measurement
 
 - Handle the size of the object based on the screen responsiveness. Used handleResize function to whenever the resize addEventlistner is calling
+-Antialiasing: To make the edges smooth, set the pixelRatio of model in between number 2  -Math.min(window.devicePixelRatio,2)

@@ -19,6 +19,7 @@ export default function Page() {
 
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
 
         if (mountRef.current) {
             mountRef.current.appendChild(renderer.domElement);
@@ -58,7 +59,7 @@ export default function Page() {
             if (!mountRef.current) return
 
             const rect = renderer.domElement.getBoundingClientRect()
-            
+
             mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
             mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
 

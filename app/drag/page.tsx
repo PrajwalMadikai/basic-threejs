@@ -38,8 +38,6 @@ export default function Page() {
         const cube = new THREE.Mesh(geometry, material);
         scene.add(cube);
 
-        
-
 
         const draggableObjects:THREE.Object3D[]=[cube]
         const drageControls=new DragControls(draggableObjects,camera,renderer.domElement)
