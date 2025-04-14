@@ -32,9 +32,20 @@ export default function Page() {
     const geometry = new THREE.BoxGeometry();
     const material = new THREE.MeshBasicMaterial({ color: 'blue' });
     const cube = new THREE.Mesh(geometry, material);
+
     scene.add(cube);
 
     camera.position.z = 5;
+
+    const handleResize=()=>{
+          camera.aspect=window.innerWidth/window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight);  
+    }
+
+    window.addEventListener('resize',handleResize)
+
+      
 
     const animate = () => {
       requestAnimationFrame(animate);
@@ -51,6 +62,7 @@ export default function Page() {
       if (mountRef.current) {
         mountRef.current.removeChild(renderer.domElement);
       }
+      window.removeEventListener('resize',handleResize)
     };
   }, []);
 
