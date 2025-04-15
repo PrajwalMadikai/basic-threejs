@@ -38,6 +38,13 @@ export default function page() {
         scene.add(cube)
         cube.position.y=1
 
+        const edges=new THREE.EdgesGeometry(cube.geometry)
+        const wireframe=new THREE.LineSegments(
+            edges,
+            new THREE.LineBasicMaterial({ color: 0x000000 })
+        )
+        cube.add(wireframe)
+
         const hanleSize=()=>{
             camera.aspect=window.innerWidth/window.innerHeight
             camera.updateProjectionMatrix()
