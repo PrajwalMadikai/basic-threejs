@@ -59,7 +59,7 @@ export default function Page() {
         );
         cube.add(wireframe);
 
-        cube.rotation.x=THREE.MathUtils.degToRad(45)
+       
 
         const handleClick = (event: MouseEvent) => {
             if (!mountRef.current) return

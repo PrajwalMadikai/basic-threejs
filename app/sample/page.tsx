@@ -18,7 +18,7 @@ export default function page() {
         )
         const scene = new THREE.Scene()
         scene.add(camera)
-        camera.position.z=5
+        camera.position.z = 5
         const renderer = new THREE.WebGLRenderer()
         renderer.setSize(window.innerWidth, window.innerHeight)
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -28,40 +28,49 @@ export default function page() {
         }
 
         const controls = new OrbitControls(camera, renderer.domElement)
-        controls.enableDamping=true
-        controls.dampingFactor=0.05
+        controls.enableDamping = true
+        controls.dampingFactor = 0.05
 
-        const geometry=new THREE.BoxGeometry(2,2,2)
-        const material=new THREE.MeshBasicMaterial({color:"red"})
-        const cube=new THREE.Mesh(geometry,material)
+        const geometry = new THREE.BoxGeometry(2, 2, 2)
+        const material = new THREE.MeshBasicMaterial({ color: "red" })
+        const cube = new THREE.Mesh(geometry, material)
 
         scene.add(cube)
-        cube.position.y=1
+        cube.position.y = 1
 
-        const edges=new THREE.EdgesGeometry(cube.geometry)
-        const wireframe=new THREE.LineSegments(
+        const axeshelper = new THREE.AxesHelper(2)
+        cube.add(axeshelper)
+
+        cube.rotation.reorder('XYZ')
+
+        cube.rotation.x = THREE.MathUtils.degToRad(45)
+        cube.rotation.y = THREE.MathUtils.degToRad(90)
+
+
+        const edges = new THREE.EdgesGeometry(cube.geometry)
+        const wireframe = new THREE.LineSegments(
             edges,
             new THREE.LineBasicMaterial({ color: 0x000000 })
         )
         cube.add(wireframe)
 
-        const hanleSize=()=>{
-            camera.aspect=window.innerWidth/window.innerHeight
+        const hanleSize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight
             camera.updateProjectionMatrix()
-            renderer.setSize(window.innerWidth,window.innerHeight)
+            renderer.setSize(window.innerWidth, window.innerHeight)
         }
-        window.addEventListener('resize',hanleSize)
+        window.addEventListener('resize', hanleSize)
 
-        const animate=()=>{
+        const animate = () => {
             requestAnimationFrame(animate)
             controls.update()
-            renderer.render(scene,camera)
+            renderer.render(scene, camera)
         }
         animate()
-        return()=>{
+        return () => {
             controls.dispose()
             renderer.dispose()
-            window.removeEventListener('resize',hanleSize)
+            window.removeEventListener('resize', hanleSize)
         }
 
     }, [])
