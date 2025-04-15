@@ -25,6 +25,8 @@ export default function Page() {
             mountRef.current.appendChild(renderer.domElement);
         }
 
+         
+
         const controls = new OrbitControls(camera, renderer.domElement)
         controls.enableDamping = true
         controls.dampingFactor = 0.05
@@ -47,6 +49,8 @@ export default function Page() {
         });
         const cube = new THREE.Mesh(geometry, material);
         scene.add(cube);
+
+        cube.position.y=1
 
         const edges = new THREE.EdgesGeometry(cube.geometry);
         const wireframe = new THREE.LineSegments(
