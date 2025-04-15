@@ -41,12 +41,6 @@ export default function page() {
         const axeshelper = new THREE.AxesHelper(2)
         cube.add(axeshelper)
 
-        cube.rotation.reorder('XYZ')
-
-        cube.rotation.x = THREE.MathUtils.degToRad(45)
-        cube.rotation.y = THREE.MathUtils.degToRad(90)
-
-
         const edges = new THREE.EdgesGeometry(cube.geometry)
         const wireframe = new THREE.LineSegments(
             edges,

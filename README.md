@@ -13,6 +13,10 @@
 -Antialiasing: To make the edges smooth, set the pixelRatio of model in between number 2  -Math.min(window.devicePixelRatio,2)
 
 -DragControls
+
+## day 2
+
 -Rotation: Rotate the model using THREE.MathUtils.degToRad() to a specific degree
 -Rotation.reorder: Is used to perform the model in disired position. It helps to prevent unneccessary rotation 
                   THREE.MathUtils.degToRad() used to convert degrees into radians. Because Three js with radians
+
