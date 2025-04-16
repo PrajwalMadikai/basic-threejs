@@ -27,3 +27,9 @@
 
 -Annotation: Added red markers using THREE.Mesh, THREE.SphereGeometry, and MeshBasicMaterial to highlight clicked positions.
 
+
+## Day 3
+
+- Render sides of model : THREE.FrontSide  is used to render the model that points to front side of model
+                          THREE.DoubleSide is used to render the model that points to sides of model
+                          THREE.BackSide is used to render the model that points to the backside of the model

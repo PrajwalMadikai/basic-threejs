@@ -43,7 +43,8 @@ export default function Page() {
         const material = new THREE.MeshBasicMaterial({
             color: 'blue',
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.5,
+            side:THREE.DoubleSide
         });
         const cube = new THREE.Mesh(geometry, material);
         scene.add(cube);
