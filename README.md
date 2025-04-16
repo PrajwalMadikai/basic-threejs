@@ -33,3 +33,7 @@
 - Render sides of model : THREE.FrontSide  is used to render the model that points to front side of model
                           THREE.DoubleSide is used to render the model that points to sides of model
                           THREE.BackSide is used to render the model that points to the backside of the model
+
+- set up the Webxr : with the xr button and enabled the xr features in the threjs using rendere.xr.enabled=true
+                     and added the xr button to the screen using useRef.appendChild(XRButton.createButton(renderer))
+                     route : /webxr
