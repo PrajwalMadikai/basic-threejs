@@ -5,14 +5,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { XRButton } from 'three/examples/jsm/webxr/XRButton.js';
 
- 
-
 export default function Page() {
     const mountRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);  
+        scene.background = new THREE.Color(0x87ceeb);
 
         const camera = new THREE.PerspectiveCamera(
             75,
@@ -30,7 +28,7 @@ export default function Page() {
         const mount = mountRef.current;
         if (mount) {
             mount.appendChild(renderer.domElement);
-            mount.appendChild(XRButton.createButton(renderer));  
+            mount.appendChild(XRButton.createButton(renderer));
         }
 
         const controls = new OrbitControls(camera, renderer.domElement);
@@ -44,7 +42,21 @@ export default function Page() {
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
-         
+        const floorGeometry = new THREE.PlaneGeometry(100, 100);
+        const floorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x808080,
+            roughness: 0.8,
+            metalness: 0.2,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.0  
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -1;  
+        floor.receiveShadow = true;
+        floor.name = "raycast-floor";
+        scene.add(floor);
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
@@ -59,16 +71,20 @@ export default function Page() {
                 const intersects = raycaster.intersectObjects(scene.children, true);
 
                 if (intersects.length > 0) {
-                    createCube(intersects[0].point, 0xff0000);  
+                    createCube(intersects[0].point);
+                } else {
+                    const position = new THREE.Vector3();
+                    raycaster.ray.at(5, position);
+                    createCube(position);
                 }
             }
         };
 
-        const createCube = (position: THREE.Vector3, color: number = 0x0000ff) => {
-            const randomSize = 0.1 + Math.random() * 0.3;
-            const geometry = new THREE.BoxGeometry(randomSize, randomSize, randomSize);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: color,
+        const createCube = (position: THREE.Vector3) => {
+            const randomColor = Math.random() * 0xffffff;  
+            const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);  
+            const material = new THREE.MeshStandardMaterial({
+                color: randomColor,  
                 roughness: 0.7,
                 metalness: 0.3
             });
@@ -90,7 +106,6 @@ export default function Page() {
             new THREE.Vector3(0, 0, 0),
             new THREE.Vector3(0, 0, -1)
         ]);
-        
         const controllerMaterial = new THREE.LineBasicMaterial({
             color: 0xffffff,
             linewidth: 2
@@ -99,24 +114,28 @@ export default function Page() {
         const controllerLine1 = new THREE.Line(controllerGeometry, controllerMaterial);
         controllerLine1.name = 'controller-line-1';
         controller1.add(controllerLine1);
-        
+
         const controllerLine2 = new THREE.Line(controllerGeometry, controllerMaterial);
         controllerLine2.name = 'controller-line-2';
         controller2.add(controllerLine2);
 
         const onXRControllerSelect = (event: THREE.Event) => {
             const controller = event.target as THREE.XRTargetRaySpace;
-            
+
             const tempMatrix = new THREE.Matrix4();
             tempMatrix.identity().extractRotation(controller.matrixWorld);
-            
+
             raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
             raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
-            
+
             const intersects = raycaster.intersectObjects(scene.children, true);
 
             if (intersects.length > 0) {
-                createCube(intersects[0].point, 0x0000ff);  
+                createCube(intersects[0].point);
+            } else {
+                const position = new THREE.Vector3();
+                raycaster.ray.at(5, position);
+                createCube(position);
             }
         };
 
