@@ -44,18 +44,18 @@ export default function Page() {
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
-        const floorGeometry = new THREE.PlaneGeometry(20, 20);
-        const floorMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x808080,
-            roughness: 0.8,
-            metalness: 0.2,
-            side: THREE.DoubleSide
-        });
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2;  
-        floor.position.y = -1;  
-        floor.receiveShadow = true;
-        scene.add(floor);
+        // const floorGeometry = new THREE.PlaneGeometry(20, 20);
+        // const floorMaterial = new THREE.MeshStandardMaterial({ 
+        //     color: 0x808080,
+        //     roughness: 0.8,
+        //     metalness: 0.2,
+        //     side: THREE.DoubleSide
+        // });
+        // const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        // floor.rotation.x = -Math.PI / 2;  
+        // floor.position.y = -1;  
+        // floor.receiveShadow = true;
+        // scene.add(floor);
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
