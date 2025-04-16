@@ -49,9 +49,6 @@ export default function Page() {
         drageControls.addEventListener('dragend',()=>{
             controls.enabled=true
         })
-
-
-
          
         
 

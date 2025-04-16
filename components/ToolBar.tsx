@@ -13,8 +13,7 @@ export default function ToolBar({
 }) {
   return (
     <div className="flex justify-center items-center">
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4 bg-gray-800 p-3 rounded-[4px] shadow-lg border border-gray-700">
-      <button
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[650px] flex justify-center items-center gap-4 bg-gray-800 p-3 rounded-full shadow-lg border border-gray-700">     <button
         onClick={() => setMode("measure")}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-md transition-colors ${
           mode === "measure"
