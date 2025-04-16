@@ -2,8 +2,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { DragControls } from 'three/examples/jsm/Addons.js';
-// @ts-ignore
-// @ts-ignore
+//@ts-expect-error
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export default function Page() {

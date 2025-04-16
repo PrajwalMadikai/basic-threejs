@@ -2,7 +2,7 @@
 import ToolBar from "@/components/ToolBar";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from 'three';
-//@ts-ignore
+//@ts-expect-error
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export type AnnotationMode = 'measure' | 'polygon' | 'annotate' | null;
