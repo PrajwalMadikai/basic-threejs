@@ -5,15 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { XRButton } from 'three/examples/jsm/webxr/XRButton.js';
 
-// Define more specific type for XR events
-interface XRControllerSelectEvent {
-  type: string;
-  target: THREE.XRTargetRaySpace;
-  data?: {
-    handedness: string;
-    gamepad: Gamepad | null;
-  };
-}
+ 
 
 export default function Page() {
     const mountRef = useRef<HTMLDivElement | null>(null);
