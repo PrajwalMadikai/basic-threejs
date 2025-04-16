@@ -63,9 +63,9 @@ export default function Page() {
         // floor.name = "raycast-floor";
         // scene.add(floor);
 
-        const gridHelper = new THREE.GridHelper(10, 10);
-        gridHelper.position.y = -1;
-        scene.add(gridHelper);
+        // const gridHelper = new THREE.GridHelper(10, 10);
+        // gridHelper.position.y = -1;
+        // scene.add(gridHelper);
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
