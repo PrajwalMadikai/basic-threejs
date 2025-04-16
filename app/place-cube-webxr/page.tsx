@@ -19,21 +19,26 @@ export default function Page() {
             1000
         );
         camera.position.z = 5;
-
+        camera.position.y = 1.5;
+        
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.xr.enabled = true;
+        
+        renderer.xr.setReferenceSpaceType('local-floor');
 
         const mount = mountRef.current;
         if (mount) {
             mount.appendChild(renderer.domElement);
-            mount.appendChild(XRButton.createButton(renderer));
+            const xrButton = XRButton.createButton(renderer);
+            mount.appendChild(xrButton);
         }
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 0);
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
@@ -42,21 +47,25 @@ export default function Page() {
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
-        const floorGeometry = new THREE.PlaneGeometry(100, 100);
-        const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x808080,
-            roughness: 0.8,
-            metalness: 0.2,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.0  
-        });
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -1;  
-        floor.receiveShadow = true;
-        floor.name = "raycast-floor";
-        scene.add(floor);
+        // const floorGeometry = new THREE.PlaneGeometry(100, 100);
+        // const floorMaterial = new THREE.MeshStandardMaterial({
+        //     color: 0x808080,
+        //     roughness: 0.8,
+        //     metalness: 0.2,
+        //     side: THREE.DoubleSide,
+        //     transparent: true,
+        //     opacity: 0.3   
+        // });
+        // const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        // floor.rotation.x = -Math.PI / 2;
+        // floor.position.y = -1;  
+        // floor.receiveShadow = true;
+        // floor.name = "raycast-floor";
+        // scene.add(floor);
+
+        const gridHelper = new THREE.GridHelper(10, 10);
+        gridHelper.position.y = -1;
+        scene.add(gridHelper);
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
@@ -69,12 +78,39 @@ export default function Page() {
                 raycaster.setFromCamera(pointer, camera);
 
                 const intersects = raycaster.intersectObjects(scene.children, true);
+                
+                const validIntersect = intersects.find(intersect => 
+                    !intersect.object.name.includes('controller-line'));
 
-                if (intersects.length > 0) {
-                    createCube(intersects[0].point);
+                if (validIntersect) {
+                    createCube(validIntersect.point);
                 } else {
-                    const position = new THREE.Vector3();
-                    raycaster.ray.at(5, position);
+                    const position = new THREE.Vector3(0, 0, -3);
+                    position.applyMatrix4(camera.matrixWorld);
+                    position.y = Math.max(position.y, -1);  
+                    createCube(position);
+                }
+            }
+        };
+
+        const onTouchEnd = (event: TouchEvent) => {
+            if (!renderer.xr.isPresenting && event.changedTouches.length > 0) {
+                const touch = event.changedTouches[0];
+                pointer.x = (touch.clientX / window.innerWidth) * 2 - 1;
+                pointer.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(pointer, camera);
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                
+                const validIntersect = intersects.find(intersect => 
+                    !intersect.object.name.includes('controller-line'));
+                
+                if (validIntersect) {
+                    createCube(validIntersect.point);
+                } else {
+                    const position = new THREE.Vector3(0, 0, -3);
+                    position.applyMatrix4(camera.matrixWorld);
+                    position.y = Math.max(position.y, -1);  
                     createCube(position);
                 }
             }
@@ -89,7 +125,9 @@ export default function Page() {
                 metalness: 0.3
             });
             const cube = new THREE.Mesh(geometry, material);
+            
             cube.position.copy(position);
+            
             cube.castShadow = true;
             cube.receiveShadow = true;
             scene.add(cube);
@@ -129,19 +167,25 @@ export default function Page() {
             raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
             const intersects = raycaster.intersectObjects(scene.children, true);
+            
+            const validIntersect = intersects.find(intersect => 
+                !intersect.object.name.includes('controller-line'));
 
-            if (intersects.length > 0) {
-                createCube(intersects[0].point);
+            if (validIntersect) {
+                createCube(validIntersect.point);
             } else {
                 const position = new THREE.Vector3();
-                raycaster.ray.at(5, position);
+                raycaster.ray.at(1, position);
+                position.y = Math.max(position.y, -1); 
                 createCube(position);
             }
         };
 
         controller1.addEventListener('select', onXRControllerSelect);
         controller2.addEventListener('select', onXRControllerSelect);
+        
         window.addEventListener('click', onMouseClick);
+        window.addEventListener('touchend', onTouchEnd);
 
         const handleResize = () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -166,9 +210,12 @@ export default function Page() {
             controls.dispose();
             renderer.dispose();
             window.removeEventListener('click', onMouseClick);
+            window.removeEventListener('touchend', onTouchEnd);
             window.removeEventListener('resize', handleResize);
             if (mount) {
-                mount.removeChild(renderer.domElement);
+                while (mount.firstChild) {
+                    mount.removeChild(mount.firstChild);
+                }
             }
         };
     }, []);
