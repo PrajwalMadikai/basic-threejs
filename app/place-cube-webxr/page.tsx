@@ -10,7 +10,7 @@ export default function Page() {
 
     useEffect(() => {
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // Sky blue background
+        scene.background = new THREE.Color(0x87ceeb);  
 
         const camera = new THREE.PerspectiveCamera(
             75,
@@ -28,14 +28,13 @@ export default function Page() {
         const mount = mountRef.current;
         if (mount) {
             mount.appendChild(renderer.domElement);
-            mount.appendChild(XRButton.createButton(renderer)); // Add XR button
+            mount.appendChild(XRButton.createButton(renderer));  
         }
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
 
-        // Add lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
@@ -43,81 +42,108 @@ export default function Page() {
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
-        // Raycaster setup
+        const floorGeometry = new THREE.PlaneGeometry(20, 20);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x808080,
+            roughness: 0.8,
+            metalness: 0.2,
+            side: THREE.DoubleSide
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2; 
+        floor.position.y = -1;  
+        floor.receiveShadow = true;
+        scene.add(floor);
+
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
 
-        // Handle mouse/touch events for non-XR mode
         const onMouseClick = (event: MouseEvent) => {
             if (!renderer.xr.isPresenting) {
-                // Calculate pointer position in normalized device coordinates (-1 to +1)
                 pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
                 pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-                // Update the raycaster with the camera and pointer
                 raycaster.setFromCamera(pointer, camera);
 
-                // Perform raycasting
                 const intersects = raycaster.intersectObjects(scene.children, true);
 
                 if (intersects.length > 0) {
-                    const intersectionPoint = intersects[0].point;
-
-                    // Create a new cube at the intersection point
-                    const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-                    const material = new THREE.MeshBasicMaterial({ color: "red" });
-                    const cube = new THREE.Mesh(geometry, material);
-                    cube.position.copy(intersectionPoint);
-                    scene.add(cube);
+                    createCube(intersects[0].point, 0xff0000);  
                 }
             }
         };
 
-        // Handle XR controller interactions
-        const onXRControllerSelect = (event: any) => {
-            const controller = event.target; // The XR controller that triggered the event
-
-            // Cast a ray from the controller
-            const controllerPointer = new THREE.Vector2(0, 0); // Fix: Use THREE.Vector2
-            raycaster.setFromCamera(controllerPointer, controller);
-
-            const intersects = raycaster.intersectObjects(scene.children, true);
-
-            if (intersects.length > 0) {
-                const intersectionPoint = intersects[0].point;
-
-                // Create a new cube at the intersection point
-                const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-                const material = new THREE.MeshBasicMaterial({ color: "blue" });
-                const cube = new THREE.Mesh(geometry, material);
-                cube.position.copy(intersectionPoint);
-                scene.add(cube);
-            }
+        const createCube = (position: THREE.Vector3, color: number = 0x0000ff) => {
+            const randomSize = 0.1 + Math.random() * 0.3;
+            const geometry = new THREE.BoxGeometry(randomSize, randomSize, randomSize);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: color,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.copy(position);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+            return cube;
         };
 
-        // Add XR controllers
         const controller1 = renderer.xr.getController(0);
-        controller1.addEventListener('select', onXRControllerSelect);
         scene.add(controller1);
 
         const controller2 = renderer.xr.getController(1);
-        controller2.addEventListener('select', onXRControllerSelect);
         scene.add(controller2);
 
-        // Add event listeners for mouse clicks
+        const controllerGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, -1)
+        ]);
+        
+        const controllerMaterial = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            linewidth: 2
+        });
+
+        const controllerLine1 = new THREE.Line(controllerGeometry, controllerMaterial);
+        controllerLine1.name = 'controller-line-1';
+        controller1.add(controllerLine1);
+        
+        const controllerLine2 = new THREE.Line(controllerGeometry, controllerMaterial);
+        controllerLine2.name = 'controller-line-2';
+        controller2.add(controllerLine2);
+
+        const onXRControllerSelect = (event: any) => {
+            const controller = event.target;
+            
+            const tempMatrix = new THREE.Matrix4();
+            tempMatrix.identity().extractRotation(controller.matrixWorld);
+            
+            raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+            raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+            
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            if (intersects.length > 0) {
+                createCube(intersects[0].point, 0x0000ff); 
+            }
+        };
+
+        controller1.addEventListener('select', onXRControllerSelect);
+        controller2.addEventListener('select', onXRControllerSelect);
         window.addEventListener('click', onMouseClick);
 
-        const handleSize = () => {
+        const handleResize = () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         };
-        window.addEventListener('resize', handleSize);
+        window.addEventListener('resize', handleResize);
 
         const animate = () => {
             renderer.setAnimationLoop(() => {
                 if (!renderer.xr.isPresenting) {
-                    controls.update(); // Update OrbitControls only outside XR mode
+                    controls.update();
                 }
                 renderer.render(scene, camera);
             });
@@ -125,15 +151,17 @@ export default function Page() {
         animate();
 
         return () => {
+            controller1.removeEventListener('select', onXRControllerSelect);
+            controller2.removeEventListener('select', onXRControllerSelect);
             controls.dispose();
             renderer.dispose();
             window.removeEventListener('click', onMouseClick);
-            window.removeEventListener('resize', handleSize);
+            window.removeEventListener('resize', handleResize);
             if (mount) {
                 mount.removeChild(renderer.domElement);
             }
         };
     }, []);
 
-    return <div ref={mountRef}></div>;
+    return <div ref={mountRef} style={{ width: '100%', height: '100vh' }}></div>;
 }
