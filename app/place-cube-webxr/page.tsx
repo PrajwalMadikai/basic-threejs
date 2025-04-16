@@ -5,6 +5,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { XRButton } from 'three/examples/jsm/webxr/XRButton.js';
 
+// Define more specific type for XR events
+interface XRControllerSelectEvent {
+  type: string;
+  target: THREE.XRTargetRaySpace;
+  data?: {
+    handedness: string;
+    gamepad: Gamepad | null;
+  };
+}
+
 export default function Page() {
     const mountRef = useRef<HTMLDivElement | null>(null);
 
@@ -50,7 +60,7 @@ export default function Page() {
             side: THREE.DoubleSide
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2; 
+        floor.rotation.x = -Math.PI / 2;  
         floor.position.y = -1;  
         floor.receiveShadow = true;
         scene.add(floor);
@@ -113,8 +123,8 @@ export default function Page() {
         controllerLine2.name = 'controller-line-2';
         controller2.add(controllerLine2);
 
-        const onXRControllerSelect = (event: any) => {
-            const controller = event.target;
+        const onXRControllerSelect = (event: THREE.Event) => {
+            const controller = event.target as THREE.XRTargetRaySpace;
             
             const tempMatrix = new THREE.Matrix4();
             tempMatrix.identity().extractRotation(controller.matrixWorld);
@@ -125,7 +135,7 @@ export default function Page() {
             const intersects = raycaster.intersectObjects(scene.children, true);
 
             if (intersects.length > 0) {
-                createCube(intersects[0].point, 0x0000ff); 
+                createCube(intersects[0].point, 0x0000ff);  
             }
         };
 
