@@ -37,3 +37,9 @@
 - set up the Webxr : with the xr button and enabled the xr features in the threjs using rendere.xr.enabled=true
                      and added the xr button to the screen using useRef.appendChild(XRButton.createButton(renderer))
                      route : /webxr
+
+-Create model by Touch event: Placed cubes on postion when user click at some areas of camera
+                   onMouseClick: method is used to capture mouse points and converts them into device coordinates
+                   onTouchEnd: is used to calculates touch position
+                   createCube : is used to create different color cube each time
+                  

@@ -47,25 +47,7 @@ export default function Page() {
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
-        // const floorGeometry = new THREE.PlaneGeometry(100, 100);
-        // const floorMaterial = new THREE.MeshStandardMaterial({
-        //     color: 0x808080,
-        //     roughness: 0.8,
-        //     metalness: 0.2,
-        //     side: THREE.DoubleSide,
-        //     transparent: true,
-        //     opacity: 0.3   
-        // });
-        // const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        // floor.rotation.x = -Math.PI / 2;
-        // floor.position.y = -1;  
-        // floor.receiveShadow = true;
-        // floor.name = "raycast-floor";
-        // scene.add(floor);
-
-        // const gridHelper = new THREE.GridHelper(10, 10);
-        // gridHelper.position.y = -1;
-        // scene.add(gridHelper);
+       
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
