@@ -40,6 +40,7 @@ export default function Page() {
   
 
         const draggableObjects:THREE.Object3D[]=[cube]
+
         const drageControls=new DragControls(draggableObjects,camera,renderer.domElement)
 
         drageControls.addEventListener('dragstart',()=>{

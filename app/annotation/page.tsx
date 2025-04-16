@@ -1,10 +1,11 @@
 'use client';
+import ToolBar from "@/components/ToolBar";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from 'three';
 //@ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-type AnnotationMode = 'measure' | 'polygon' | 'annotate' | null;
+export type AnnotationMode = 'measure' | 'polygon' | 'annotate' | null;
 
 interface Annotation {
     position: THREE.Vector3;
@@ -428,33 +429,9 @@ export default function Page() {
                     onClick={cancelAnnotation}
                 ></div>
             )}
-
-            <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 bg-gray-800 p-2 rounded-md shadow-md">
-                <button
-                    onClick={() => setMode('measure')}
-                    className={`px-3 py-1 ${mode === 'measure' ? 'bg-blue-600' : 'bg-blue-500'} text-white rounded-md hover:bg-blue-600 transition-colors`}
-                >
-                    Measure Distance
-                </button>
-                <button
-                    onClick={() => setMode('polygon')}
-                    className={`px-3 py-1 ${mode === 'polygon' ? 'bg-green-600' : 'bg-green-500'} text-white rounded-md hover:bg-green-600 transition-colors`}
-                >
-                    Draw Polygon
-                </button>
-                <button
-                    onClick={() => setMode('annotate')}
-                    className={`px-3 py-1 ${mode === 'annotate' ? 'bg-yellow-600' : 'bg-yellow-500'} text-white rounded-md hover:bg-yellow-600 transition-colors`}
-                >
-                    Add Annotation
-                </button>
-                <button
-                    onClick={clearAll}
-                    className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-                >
-                    Clear All
-                </button>
-            </div>
+            
+            <ToolBar setMode={setMode} clearAll={clearAll} mode={mode} />
+            
         </div>
     );
 }

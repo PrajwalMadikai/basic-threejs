@@ -17,6 +17,13 @@
 ## day 2
 
 -Rotation: Rotate the model using THREE.MathUtils.degToRad() to a specific degree
--Rotation.reorder: Is used to perform the model in disired position. It helps to prevent unneccessary rotation 
+
+-Rotation.reorder: Is used to perform the model in disired position. It helps to prevent unneccessary rotation .
                   THREE.MathUtils.degToRad() used to convert degrees into radians. Because Three js with radians
+            
+-Measurement: Used useRef, useState, THREE.Raycaster, THREE.Vector3, distanceTo() to measure distance between two clicked points on the model. Displayed result using state.
+
+-Polygon Drawing: Collected multiple Vector3 points on user clicks. Used THREE.BufferGeometry().setFromPoints() and THREE.Line to draw lines between them.
+
+-Annotation: Added red markers using THREE.Mesh, THREE.SphereGeometry, and MeshBasicMaterial to highlight clicked positions.
 
