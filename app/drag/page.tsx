@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { DragControls } from 'three/examples/jsm/Addons.js';
-//@ts-expect-error
+// @ts-expect-error Suppressing error because OrbitControls is imported from an external library.
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export default function Page() {
@@ -19,9 +19,9 @@ export default function Page() {
 
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
-
-        if (mountRef.current) {
-            mountRef.current.appendChild(renderer.domElement);
+        const mount=mountRef.current
+        if (mount) {
+            mount.appendChild(renderer.domElement);
         }
 
         const controls = new OrbitControls(camera, renderer.domElement)

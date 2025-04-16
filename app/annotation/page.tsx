@@ -2,7 +2,7 @@
 import ToolBar from "@/components/ToolBar";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from 'three';
-//@ts-expect-error
+// @ts-expect-error Suppressing error because OrbitControls is imported from an external library.
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export type AnnotationMode = 'measure' | 'polygon' | 'annotate' | null;
@@ -18,7 +18,6 @@ interface Measurement {
 }
 
 export default function Page() {
-
     const mountRef = useRef<HTMLDivElement | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -53,8 +52,9 @@ export default function Page() {
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         rendererRef.current = renderer;
 
-        if (mountRef.current) {
-            mountRef.current.appendChild(renderer.domElement);
+        const mount = mountRef.current;  
+        if (mount) {
+            mount.appendChild(renderer.domElement);
         }
 
         camera.position.z = 5;
@@ -106,6 +106,7 @@ export default function Page() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
         };
+
         window.addEventListener('resize', handleResize);
 
         const animate = () => {
@@ -115,14 +116,15 @@ export default function Page() {
                 renderer.render(scene, camera);
             }
         };
+
         animate();
 
         return () => {
             if (controls) controls.dispose();
             if (renderer) renderer.dispose();
             window.removeEventListener('resize', handleResize);
-            if (mountRef.current && renderer.domElement) {
-                mountRef.current.removeChild(renderer.domElement);
+            if (mount && renderer.domElement) {
+                mount.removeChild(renderer.domElement);
             }
         };
     }, []);
@@ -134,9 +136,7 @@ export default function Page() {
         const mouse = new THREE.Vector2();
 
         const handleClick = (event: MouseEvent): void => {
-
             if (!mountRef.current || !mode) return;
-
             if (showAnnotationInput) return;
 
             const rect = mountRef.current.getBoundingClientRect();
@@ -177,9 +177,7 @@ export default function Page() {
 
         const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
         const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-
         const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
-
         pointMesh.position.copy(point);
         pointsGroupRef.current.add(pointMesh);
 
@@ -187,7 +185,6 @@ export default function Page() {
             const newPoints = [...prevPoints, point];
 
             if (newPoints.length % 2 === 0 && measureLinesRef.current) {
-
                 const p1 = newPoints[newPoints.length - 2];
                 const p2 = newPoints[newPoints.length - 1];
                 const distance = p1.distanceTo(p2);
@@ -197,10 +194,13 @@ export default function Page() {
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 measureLinesRef.current.add(line);
 
-                setMeasurements(prev => [...prev, {
-                    points: [p1, p2],
-                    distance: distance.toFixed(2)
-                }]);
+                setMeasurements(prev => [
+                    ...prev,
+                    {
+                        points: [p1, p2],
+                        distance: distance.toFixed(2)
+                    }
+                ]);
             }
 
             return newPoints;
@@ -208,7 +208,6 @@ export default function Page() {
     };
 
     const handlePolygonPoint = (point: THREE.Vector3): void => {
-
         if (!pointsGroupRef.current || !polygonGroupRef.current) return;
 
         const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
@@ -220,8 +219,7 @@ export default function Page() {
         setPoints(prevPoints => {
             const newPoints = [...prevPoints, point];
 
-            if (newPoints.length >= 2 && polygonGroupRef.current){
-                
+            if (newPoints.length >= 2 && polygonGroupRef.current) {
                 const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
                 const p1 = newPoints[newPoints.length - 2];
                 const p2 = newPoints[newPoints.length - 1];
@@ -235,11 +233,12 @@ export default function Page() {
                     polygonGroupRef.current.add(closingLine);
 
                     const polygonShape = new THREE.Shape();
-
                     polygonShape.moveTo(newPoints[0].x, newPoints[0].y);
+
                     for (let i = 1; i < newPoints.length; i++) {
                         polygonShape.lineTo(newPoints[i].x, newPoints[i].y);
                     }
+
                     polygonShape.lineTo(newPoints[0].x, newPoints[0].y);
 
                     const polygonGeometry = new THREE.ShapeGeometry(polygonShape);
@@ -250,8 +249,10 @@ export default function Page() {
                         side: THREE.DoubleSide
                     });
 
-                    setPolygons(prev => [...prev, newPoints]);
+                    const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial);
+                    polygonGroupRef.current?.add(polygonMesh);
 
+                    setPolygons(prev => [...prev, newPoints]);
                     return [];
                 }
             }
@@ -299,7 +300,6 @@ export default function Page() {
 
         const vector = position.clone();
         const canvas = rendererRef.current.domElement;
-
         vector.project(cameraRef.current);
 
         const x = (vector.x * 0.5 + 0.5) * canvas.clientWidth;
@@ -339,7 +339,6 @@ export default function Page() {
     return (
         <div className="relative w-full h-screen">
             <div ref={mountRef} className="w-full h-full" />
-
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 {annotations.map((annotation, index) => {
                     const pos = getScreenPosition(annotation.position);
@@ -359,14 +358,12 @@ export default function Page() {
                     );
                 })}
             </div>
-
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 {measurements.map((measurement, index) => {
                     const midpoint = new THREE.Vector3().addVectors(
                         measurement.points[0],
                         measurement.points[1]
                     ).multiplyScalar(0.5);
-
                     const pos = getScreenPosition(midpoint);
                     return (
                         <div
@@ -384,14 +381,12 @@ export default function Page() {
                     );
                 })}
             </div>
-
             <div className="absolute top-4 left-4 flex flex-col gap-2">
                 {mode && (
                     <div className="bg-black bg-opacity-60 text-white px-3 py-1 rounded-md">
                         Mode: {mode.charAt(0).toUpperCase() + mode.slice(1)}
                     </div>
                 )}
-                
                 {showAnnotationInput && (
                     <div className="bg-white p-4 rounded-md shadow-lg z-50 w-64 mt-2">
                         <h3 className="text-lg font-semibold mb-2 text-gray-800">Add Annotation</h3>
@@ -399,7 +394,7 @@ export default function Page() {
                             type="text"
                             value={annotationText}
                             onChange={(e) => setAnnotationText(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded mb-2 text-black" 
+                            className="w-full p-2 border border-gray-300 rounded mb-2 text-black"
                             placeholder="Enter annotation text"
                             autoFocus
                         />
@@ -422,16 +417,13 @@ export default function Page() {
                     </div>
                 )}
             </div>
-            
             {showAnnotationInput && (
-                <div 
+                <div
                     className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-20 z-40"
                     onClick={cancelAnnotation}
                 ></div>
             )}
-            
             <ToolBar setMode={setMode} clearAll={clearAll} mode={mode} />
-            
         </div>
     );
 }
