@@ -10,7 +10,6 @@ export type AnnotationMode = 'measure' | 'polygon' | 'annotate' | 'undo' | 'redo
 interface Annotation {
     position: THREE.Vector3;
     text: string;
-    worldPosition: THREE.Vector3;
 }
 
 interface Measurement {
@@ -25,7 +24,6 @@ interface HistoryAction {
         distance?: string;
         position?: THREE.Vector3;
         text?: string;
-        worldPosition?: THREE.Vector3;
         measurements?: Measurement[];
         annotations?: Annotation[];
         polygons?: THREE.Vector3[][];
@@ -56,6 +54,7 @@ export default function Page() {
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     
     const needsUpdate = useRef<boolean>(true);
+    const [screenPositions, setScreenPositions] = useState<{[key: number]: {left: number, top: number}}>({});
 
     useEffect(() => {
         const scene = new THREE.Scene();
@@ -85,6 +84,7 @@ export default function Page() {
         controls.dampingFactor = 0.05;
         controls.addEventListener('change', () => {
             needsUpdate.current = true;
+            updateAnnotationPositions();
         });
         controlsRef.current = controls;
 
@@ -122,6 +122,7 @@ export default function Page() {
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 needsUpdate.current = true;
+                updateAnnotationPositions();
             }
         };
 
@@ -149,6 +150,23 @@ export default function Page() {
             }
         };
     }, []);
+
+    const updateAnnotationPositions = () => {
+        const newPositions: {[key: number]: {left: number, top: number}} = {};
+        
+        annotations.forEach((annotation, index) => {
+            const pos = getScreenPosition(annotation.position);
+            newPositions[index] = pos;
+        });
+        
+        setScreenPositions(newPositions);
+        
+        needsUpdate.current = true;
+    };
+
+    useEffect(() => {
+        updateAnnotationPositions();
+    }, [annotations]);
 
     useEffect(() => {
         if (!sceneRef.current || !cameraRef.current) return;
@@ -326,7 +344,6 @@ export default function Page() {
                 const annotation: Annotation = {
                     position: action.data.position,
                     text: action.data.text,
-                    worldPosition: action.data.worldPosition || action.data.position.clone()
                 };
                 const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
                 const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -399,6 +416,7 @@ export default function Page() {
             polygonGroupRef.current?.add(polygonMesh);
         });
         needsUpdate.current = true;
+        updateAnnotationPositions();
     };
 
     const handleMeasurePoint = (point: THREE.Vector3): void => {
@@ -512,8 +530,7 @@ export default function Page() {
 
         const newAnnotation: Annotation = {
             position: tempAnnotationPosition.clone(),
-            text: annotationText,
-            worldPosition: tempAnnotationPosition.clone()
+            text: annotationText
         };
 
         setAnnotations(prev => [...prev, newAnnotation]);
@@ -604,32 +621,39 @@ export default function Page() {
 
     useEffect(() => {
         needsUpdate.current = true;
-    }, [annotations, measurements, polygons]);
+    }, [measurements, polygons]);
 
     useEffect(() => {
-        const updatePositions = () => {
-            if (controlsRef.current && (annotations.length > 0 || measurements.length > 0)) {
-                needsUpdate.current = true;
-            }
+        const continuallyUpdatePositions = () => {
+            const newMeasurementPositions: {[key: number]: {left: number, top: number}} = {};
+            measurements.forEach((measurement, index) => {
+                const midpoint = new THREE.Vector3().addVectors(
+                    measurement.points[0],
+                    measurement.points[1]
+                ).multiplyScalar(0.5);
+                
+                const screenPos = getScreenPosition(midpoint);
+                newMeasurementPositions[index] = screenPos;
+            });
+            
+            updateAnnotationPositions();
+            
+            requestAnimationFrame(continuallyUpdatePositions);
         };
-
-        if (controlsRef.current) {
-            controlsRef.current.addEventListener('change', updatePositions);
-        }
-
+        
+        const animId = requestAnimationFrame(continuallyUpdatePositions);
+        
         return () => {
-            if (controlsRef.current) {
-                controlsRef.current.removeEventListener('change', updatePositions);
-            }
+            cancelAnimationFrame(animId);
         };
     }, [annotations, measurements]);
-    
     return (
         <div className="relative w-full h-screen">
             <div ref={mountRef} className="w-full h-full" />
+
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 {annotations.map((annotation, index) => {
-                    const pos = getScreenPosition(annotation.worldPosition);
+                    const pos = screenPositions[index] || getScreenPosition(annotation.position);
                     return (
                         <div
                             key={index}
@@ -638,7 +662,7 @@ export default function Page() {
                                 left: `${pos.left}px`,
                                 top: `${pos.top}px`,
                                 transform: 'translate(-50%, -50%)',
-                                zIndex: 10
+                                zIndex: 10,
                             }}
                         >
                             {annotation.text}
@@ -646,6 +670,7 @@ export default function Page() {
                     );
                 })}
             </div>
+
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 {measurements.map((measurement, index) => {
                     const midpoint = new THREE.Vector3().addVectors(
@@ -661,7 +686,7 @@ export default function Page() {
                                 left: `${pos.left}px`,
                                 top: `${pos.top}px`,
                                 transform: 'translate(-50%, -50%)',
-                                zIndex: 10
+                                zIndex: 10,
                             }}
                         >
                             {measurement.distance} units
@@ -669,21 +694,23 @@ export default function Page() {
                     );
                 })}
             </div>
-    
+
             <div className="absolute top-4 left-4 flex flex-col gap-2">
                 {mode && (
                     <div className="bg-black bg-opacity-60 text-white px-3 py-1 rounded-md">
                         Mode: {mode.charAt(0).toUpperCase() + mode.slice(1)}
                     </div>
                 )}
-                {showAnnotationInput && (
-                    <div className="bg-white p-4 rounded-md shadow-lg z-50 w-64 mt-2">
-                        <h3 className="text-lg font-semibold mb-2 text-gray-800">Add Annotation</h3>
+            </div>
+
+            {showAnnotationInput && (
+                <>
+                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg shadow-xl w-96">
                         <input
                             type="text"
                             value={annotationText}
                             onChange={(e) => setAnnotationText(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded mb-2 text-black"
+                            className="w-full p-2 border border-gray-300 rounded mb-4 text-black"
                             placeholder="Enter annotation text"
                             autoFocus
                         />
@@ -704,18 +731,13 @@ export default function Page() {
                             </button>
                         </div>
                     </div>
-                )}
-            </div>
-            {showAnnotationInput && (
-                <div
-                    className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-20 z-40"
-                    onClick={cancelAnnotation}
-                ></div>
+                </>
             )}
-            <ToolBar 
-                setMode={setMode} 
-                clearAll={clearAll} 
-                mode={mode} 
+
+            <ToolBar
+                setMode={setMode}
+                clearAll={clearAll}
+                mode={mode}
                 canUndo={historyIndex >= 0}
                 canRedo={historyIndex < history.length - 1}
             />
