@@ -34,7 +34,7 @@ export default function ToolBar({
     <div className="flex justify-center items-center">
       <div
         className="fixed bottom-6 left-1/2 transform -translate-x-1/2 
-          w-[90%] max-w-[450px] flex justify-between items-center gap-2 
+          w-[90%] max-w-[470px] flex justify-between items-center gap-2 
           bg-gray-800/30 p-2 rounded-lg shadow-lg border border-gray-700 backdrop-blur-md"
       >
         <button
