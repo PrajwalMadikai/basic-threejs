@@ -6,10 +6,14 @@ export default function ToolBar({
   setMode,
   clearAll,
   mode,
+  canUndo = false,
+  canRedo = false,
 }: {
   setMode: (value: AnnotationMode) => void;
   clearAll: () => void;
   mode: AnnotationMode;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -62,8 +66,10 @@ export default function ToolBar({
                 setMode("undo");
                 setIsMenuOpen(false);
               }}
-              className="flex items-center justify-center gap-2 p-2 rounded-md transition-all 
-                bg-black text-white hover:bg-gray-700 cursor-pointer relative group flex-grow"
+              disabled={!canUndo}
+              className={`flex items-center justify-center gap-2 p-2 rounded-md transition-all 
+                ${canUndo ? 'bg-black text-white hover:bg-gray-700' : 'bg-gray-800 text-gray-500'} 
+                cursor-pointer relative group flex-grow`}
               title="Undo"
             >
               <Undo className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -77,8 +83,10 @@ export default function ToolBar({
                 setMode("redo");
                 setIsMenuOpen(false);
               }}
-              className="flex items-center justify-center gap-2 p-2 rounded-md transition-all 
-                bg-black text-white hover:bg-gray-700 cursor-pointer relative group flex-grow"
+              disabled={!canRedo}
+              className={`flex items-center justify-center gap-2 p-2 rounded-md transition-all 
+                ${canRedo ? 'bg-black text-white hover:bg-gray-700' : 'bg-gray-800 text-gray-500'} 
+                cursor-pointer relative group flex-grow`}
               title="Redo"
             >
               <Redo className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -153,15 +161,21 @@ export default function ToolBar({
         <div className="hidden sm:flex justify-between gap-2 sm:gap-16">
           <div className="flex gap-2">
             <button
-              className="flex items-center justify-center p-2 sm:p-2.5 rounded-md transition-all 
-                bg-black text-white hover:bg-gray-700 cursor-pointer"
+              onClick={() => setMode("undo")}
+              disabled={!canUndo}
+              className={`flex items-center justify-center p-2 sm:p-2.5 rounded-md transition-all 
+                ${canUndo ? 'bg-black text-white hover:bg-gray-700' : 'bg-gray-800 text-gray-500'} 
+                cursor-pointer`}
               title="Undo"
             >
               <Undo className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <button
-              className="flex items-center justify-center p-2 sm:p-2.5 rounded-md transition-all 
-                bg-black text-white hover:bg-gray-700 cursor-pointer"
+              onClick={() => setMode("redo")}
+              disabled={!canRedo}
+              className={`flex items-center justify-center p-2 sm:p-2.5 rounded-md transition-all 
+                ${canRedo ? 'bg-black text-white hover:bg-gray-700' : 'bg-gray-800 text-gray-500'} 
+                cursor-pointer`}
               title="Redo"
             >
               <Redo className="w-4 h-4 sm:w-5 sm:h-5" />
