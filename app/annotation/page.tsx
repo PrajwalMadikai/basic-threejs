@@ -5,7 +5,7 @@ import * as THREE from 'three';
 // @ts-expect-error Suppressing error because OrbitControls is imported from an external library.
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-export type AnnotationMode = 'measure' | 'polygon' | 'annotate' | null;
+export type AnnotationMode = 'measure' | 'polygon' | 'annotate' |'undo'|'redo'| null;
 
 interface Annotation {
     position: THREE.Vector3;
@@ -73,12 +73,7 @@ export default function Page() {
         scene.add(cube);
         cube.position.y = 1;
 
-        const edges = new THREE.EdgesGeometry(cube.geometry);
-        const wireframe = new THREE.LineSegments(
-            edges,
-            new THREE.LineBasicMaterial({ color: 0x000000 })
-        );
-        cube.add(wireframe);
+        
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
