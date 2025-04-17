@@ -10,6 +10,7 @@ export type AnnotationMode = 'measure' | 'polygon' | 'annotate' | 'undo' | 'redo
 interface Annotation {
     position: THREE.Vector3;
     text: string;
+    worldPosition: THREE.Vector3;
 }
 
 interface Measurement {
@@ -19,7 +20,16 @@ interface Measurement {
 
 interface HistoryAction {
     type: 'measure' | 'polygon' | 'annotate' | 'clear';
-    data: any;
+    data: {
+        points?: THREE.Vector3[];
+        distance?: string;
+        position?: THREE.Vector3;
+        text?: string;
+        worldPosition?: THREE.Vector3;
+        measurements?: Measurement[];
+        annotations?: Annotation[];
+        polygons?: THREE.Vector3[][];
+    };
 }
 
 export default function Page() {
@@ -31,6 +41,7 @@ export default function Page() {
     const measureLinesRef = useRef<THREE.Group | null>(null);
     const polygonGroupRef = useRef<THREE.Group | null>(null);
     const controlsRef = useRef<OrbitControls | null>(null);
+    const animationRef = useRef<number | null>(null);
 
     const [mode, setMode] = useState<AnnotationMode>(null);
     const [points, setPoints] = useState<THREE.Vector3[]>([]);
@@ -41,9 +52,10 @@ export default function Page() {
     const [showAnnotationInput, setShowAnnotationInput] = useState<boolean>(false);
     const [tempAnnotationPosition, setTempAnnotationPosition] = useState<THREE.Vector3 | null>(null);
     
-    // History system for undo/redo
     const [history, setHistory] = useState<HistoryAction[]>([]);
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
+    
+    const needsUpdate = useRef<boolean>(true);
 
     useEffect(() => {
         const scene = new THREE.Scene();
@@ -71,6 +83,9 @@ export default function Page() {
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
+        controls.addEventListener('change', () => {
+            needsUpdate.current = true;
+        });
         controlsRef.current = controls;
 
         const geometry = new THREE.BoxGeometry(2, 2, 2);
@@ -106,16 +121,19 @@ export default function Page() {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                needsUpdate.current = true;
             }
         };
 
         window.addEventListener('resize', handleResize);
 
         const animate = () => {
-            requestAnimationFrame(animate);
+            animationRef.current = requestAnimationFrame(animate);
             if (controls) controls.update();
-            if (scene && camera && renderer) {
+            
+            if (scene && camera && renderer && needsUpdate.current) {
                 renderer.render(scene, camera);
+                needsUpdate.current = false;
             }
         };
 
@@ -124,6 +142,7 @@ export default function Page() {
         return () => {
             if (controls) controls.dispose();
             if (renderer) renderer.dispose();
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
             window.removeEventListener('resize', handleResize);
             if (mount && renderer.domElement) {
                 mount.removeChild(renderer.domElement);
@@ -141,7 +160,6 @@ export default function Page() {
             if (!mountRef.current || !mode) return;
             if (showAnnotationInput) return;
             
-            // Handle undo/redo buttons from the toolbar
             if (mode === 'undo') {
                 handleUndo();
                 setMode(null);
@@ -174,6 +192,7 @@ export default function Page() {
                         } else if (mode === 'annotate') {
                             setTempAnnotationPosition(point);
                             setShowAnnotationInput(true);
+                            needsUpdate.current = true;
                         }
                     }
                 }
@@ -187,7 +206,6 @@ export default function Page() {
         };
     }, [mode, points, measurements, polygons, showAnnotationInput]);
 
-    // Add action to history
     const addToHistory = (action: HistoryAction): void => {
         const newHistory = history.slice(0, historyIndex + 1);
         newHistory.push(action);
@@ -199,20 +217,17 @@ export default function Page() {
         if (historyIndex < 0) return;
         const action = history[historyIndex];
         if (action.type === 'measure') {
-            // Remove measurement points
             if (pointsGroupRef.current && pointsGroupRef.current.children.length >= 2) {
                 pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
                 pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
             }
-            // Remove measurement line
             if (measureLinesRef.current && measureLinesRef.current.children.length > 0) {
                 measureLinesRef.current.remove(measureLinesRef.current.children[measureLinesRef.current.children.length - 1]);
             }
             setMeasurements(prev => prev.slice(0, -1));
             setPoints(prev => prev.slice(0, -2));
         } else if (action.type === 'polygon') {
-            const polygonPoints = action.data.points;
-            // Remove all points for this polygon
+            const polygonPoints = action.data.points || [];
             if (pointsGroupRef.current) {
                 for (let i = 0; i < polygonPoints.length; i++) {
                     if (pointsGroupRef.current.children.length > 0) {
@@ -220,13 +235,10 @@ export default function Page() {
                     }
                 }
             }
-            // Remove polygon mesh and lines
             if (polygonGroupRef.current) {
-                // Remove the polygon mesh (assumed to be the last child added)
                 if (polygonGroupRef.current.children.length > 0) {
                     polygonGroupRef.current.remove(polygonGroupRef.current.children[polygonGroupRef.current.children.length - 1]);
                 }
-                // Remove all connecting lines
                 for (let i = 0; i < polygonPoints.length; i++) {
                     if (polygonGroupRef.current.children.length > 0) {
                         polygonGroupRef.current.remove(polygonGroupRef.current.children[polygonGroupRef.current.children.length - 1]);
@@ -235,27 +247,28 @@ export default function Page() {
             }
             setPolygons(prev => prev.slice(0, -1));
         } else if (action.type === 'annotate') {
-            // Remove annotation point
             if (pointsGroupRef.current && pointsGroupRef.current.children.length > 0) {
                 pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
             }
             setAnnotations(prev => prev.slice(0, -1));
         } else if (action.type === 'clear') {
-            // Restore previous state before clear was called
-            const previousState = action.data;
+            const previousState = {
+                measurements: action.data.measurements || [],
+                annotations: action.data.annotations || [],
+                polygons: action.data.polygons || []
+            };
             restoreState(previousState);
         }
         setHistoryIndex(historyIndex - 1);
+        needsUpdate.current = true;
     };
-
-    // Fixed handleRedo function
+    
     const handleRedo = (): void => {
         if (historyIndex >= history.length - 1) return;
         const action = history[historyIndex + 1];
-        if (action.type === 'measure') {
+        if (action.type === 'measure' && action.data.points && action.data.points.length >= 2) {
             const p1 = action.data.points[0];
             const p2 = action.data.points[1];
-            // Add points
             const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
             const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             const point1 = new THREE.Mesh(pointGeometry, pointMaterial);
@@ -264,16 +277,19 @@ export default function Page() {
             point2.position.copy(p2);
             pointsGroupRef.current?.add(point1);
             pointsGroupRef.current?.add(point2);
-            // Add line
             const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
             const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
             const line = new THREE.Line(lineGeometry, lineMaterial);
             measureLinesRef.current?.add(line);
             setPoints(prev => [...prev, p1, p2]);
-            setMeasurements(prev => [...prev, action.data]);
-        } else if (action.type === 'polygon') {
+            
+            const measurementData = {
+                points: [p1, p2] as [THREE.Vector3, THREE.Vector3],
+                distance: action.data.distance || p1.distanceTo(p2).toFixed(2)
+            };
+            setMeasurements(prev => [...prev, measurementData]);
+        } else if (action.type === 'polygon' && action.data.points) {
             const polygon = action.data.points;
-            // Add points for polygon
             const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
             const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             polygon.forEach((point: THREE.Vector3) => {
@@ -281,7 +297,6 @@ export default function Page() {
                 pointMesh.position.copy(point);
                 pointsGroupRef.current?.add(pointMesh);
             });
-            // Add lines for polygon
             const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
             for (let i = 0; i < polygon.length; i++) {
                 const p1 = polygon[i];
@@ -290,7 +305,6 @@ export default function Page() {
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 polygonGroupRef.current?.add(line);
             }
-            // Add polygon shape
             const polygonShape = new THREE.Shape();
             polygonShape.moveTo(polygon[0].x, polygon[0].y);
             for (let i = 1; i < polygon.length; i++) {
@@ -308,21 +322,27 @@ export default function Page() {
             polygonGroupRef.current?.add(polygonMesh);
             setPolygons(prev => [...prev, polygon]);
         } else if (action.type === 'annotate') {
-            const annotation = action.data;
-            // Add annotation point
-            const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-            const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            const point = new THREE.Mesh(pointGeometry, pointMaterial);
-            point.position.copy(annotation.position);
-            pointsGroupRef.current?.add(point);
-            setAnnotations(prev => [...prev, annotation]);
+            if (action.data.position && action.data.text) {
+                const annotation: Annotation = {
+                    position: action.data.position,
+                    text: action.data.text,
+                    worldPosition: action.data.worldPosition || action.data.position.clone()
+                };
+                const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+                const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                const point = new THREE.Mesh(pointGeometry, pointMaterial);
+                point.position.copy(annotation.position);
+                pointsGroupRef.current?.add(point);
+                setAnnotations(prev => [...prev, annotation]);
+            }
         } else if (action.type === 'clear') {
             clearAll();
         }
         setHistoryIndex(historyIndex + 1);
+        needsUpdate.current = true;
     };
+    
     const restoreState = (state: { measurements: Measurement[]; annotations: Annotation[]; polygons: THREE.Vector3[][] }) => {
-        // Restore measurements
         state.measurements.forEach((measurement: Measurement) => {
             const p1 = measurement.points[0];
             const p2 = measurement.points[1];
@@ -339,7 +359,6 @@ export default function Page() {
             const line = new THREE.Line(lineGeometry, lineMaterial);
             measureLinesRef.current?.add(line);
         });
-        // Restore annotations
         state.annotations.forEach((annotation: Annotation) => {
             const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
             const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -347,9 +366,7 @@ export default function Page() {
             point.position.copy(annotation.position);
             pointsGroupRef.current?.add(point);
         });
-        // Restore polygons
         state.polygons.forEach((polygon: THREE.Vector3[]) => {
-            // Add points for polygon
             const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
             const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             polygon.forEach((point: THREE.Vector3) => {
@@ -357,7 +374,6 @@ export default function Page() {
                 pointMesh.position.copy(point);
                 pointsGroupRef.current?.add(pointMesh);
             });
-            // Add lines for polygon
             const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
             for (let i = 0; i < polygon.length; i++) {
                 const p1 = polygon[i];
@@ -366,7 +382,6 @@ export default function Page() {
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 polygonGroupRef.current?.add(line);
             }
-            // Add polygon shape
             const polygonShape = new THREE.Shape();
             polygonShape.moveTo(polygon[0].x, polygon[0].y);
             for (let i = 1; i < polygon.length; i++) {
@@ -383,6 +398,7 @@ export default function Page() {
             const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial);
             polygonGroupRef.current?.add(polygonMesh);
         });
+        needsUpdate.current = true;
     };
 
     const handleMeasurePoint = (point: THREE.Vector3): void => {
@@ -414,11 +430,12 @@ export default function Page() {
 
                 setMeasurements(prev => [...prev, measurement]);
                 
-                // Add to history
                 addToHistory({
                     type: 'measure',
                     data: measurement
                 });
+                
+                needsUpdate.current = true;
             }
 
             return newPoints;
@@ -474,7 +491,6 @@ export default function Page() {
                     
                     setPolygons(prev => [...prev, polygonPoints]);
                     
-                    // Add to history
                     addToHistory({
                         type: 'polygon',
                         data: {
@@ -482,6 +498,7 @@ export default function Page() {
                         }
                     });
                     
+                    needsUpdate.current = true;
                     return [];
                 }
             }
@@ -494,8 +511,9 @@ export default function Page() {
         if (!tempAnnotationPosition || !annotationText.trim() || !pointsGroupRef.current) return;
 
         const newAnnotation: Annotation = {
-            position: tempAnnotationPosition,
-            text: annotationText
+            position: tempAnnotationPosition.clone(),
+            text: annotationText,
+            worldPosition: tempAnnotationPosition.clone()
         };
 
         setAnnotations(prev => [...prev, newAnnotation]);
@@ -506,7 +524,6 @@ export default function Page() {
         indicator.position.copy(tempAnnotationPosition);
         pointsGroupRef.current.add(indicator);
         
-        // Add to history
         addToHistory({
             type: 'annotate',
             data: newAnnotation
@@ -515,12 +532,14 @@ export default function Page() {
         setAnnotationText("");
         setShowAnnotationInput(false);
         setTempAnnotationPosition(null);
+        needsUpdate.current = true;
     };
 
     const cancelAnnotation = (): void => {
         setAnnotationText("");
         setShowAnnotationInput(false);
         setTempAnnotationPosition(null);
+        needsUpdate.current = true;
     };
 
     interface ScreenPosition {
@@ -544,14 +563,12 @@ export default function Page() {
     };
 
     const clearAll = (): void => {
-        // Store the current state before clearing
         const currentState = {
             measurements: [...measurements],
             annotations: [...annotations],
             polygons: [...polygons]
         };
         
-        // Add to history before clearing
         addToHistory({
             type: 'clear',
             data: currentState
@@ -582,14 +599,37 @@ export default function Page() {
         setShowAnnotationInput(false);
         setTempAnnotationPosition(null);
         setAnnotationText("");
+        needsUpdate.current = true;
     };
 
+    useEffect(() => {
+        needsUpdate.current = true;
+    }, [annotations, measurements, polygons]);
+
+    useEffect(() => {
+        const updatePositions = () => {
+            if (controlsRef.current && (annotations.length > 0 || measurements.length > 0)) {
+                needsUpdate.current = true;
+            }
+        };
+
+        if (controlsRef.current) {
+            controlsRef.current.addEventListener('change', updatePositions);
+        }
+
+        return () => {
+            if (controlsRef.current) {
+                controlsRef.current.removeEventListener('change', updatePositions);
+            }
+        };
+    }, [annotations, measurements]);
+    
     return (
         <div className="relative w-full h-screen">
             <div ref={mountRef} className="w-full h-full" />
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 {annotations.map((annotation, index) => {
-                    const pos = getScreenPosition(annotation.position);
+                    const pos = getScreenPosition(annotation.worldPosition);
                     return (
                         <div
                             key={index}
@@ -629,6 +669,7 @@ export default function Page() {
                     );
                 })}
             </div>
+    
             <div className="absolute top-4 left-4 flex flex-col gap-2">
                 {mode && (
                     <div className="bg-black bg-opacity-60 text-white px-3 py-1 rounded-md">
