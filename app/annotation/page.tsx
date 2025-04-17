@@ -195,235 +195,108 @@ export default function Page() {
         setHistoryIndex(newHistory.length - 1);
     };
 
-    // Fixed handleUndo function
     const handleUndo = (): void => {
         if (historyIndex < 0) return;
-        
         const action = history[historyIndex];
-        
         if (action.type === 'measure') {
-            // Remove the measurement points
-            if (pointsGroupRef.current) {
-                // Remove the last two points added for this measurement
-                if (pointsGroupRef.current.children.length >= 2) {
-                    pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
-                    pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
-                }
+            // Remove measurement points
+            if (pointsGroupRef.current && pointsGroupRef.current.children.length >= 2) {
+                pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
+                pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
             }
-            
-            // Remove the measurement line
+            // Remove measurement line
             if (measureLinesRef.current && measureLinesRef.current.children.length > 0) {
-                // Remove the last line added for this measurement
                 measureLinesRef.current.remove(measureLinesRef.current.children[measureLinesRef.current.children.length - 1]);
             }
-            
-            // Update the state
             setMeasurements(prev => prev.slice(0, -1));
             setPoints(prev => prev.slice(0, -2));
-        }
-        else if (action.type === 'polygon') {
+        } else if (action.type === 'polygon') {
             const polygonPoints = action.data.points;
-            
             // Remove all points for this polygon
             if (pointsGroupRef.current) {
-                // Remove the last N points where N is the number of points in the polygon
                 for (let i = 0; i < polygonPoints.length; i++) {
                     if (pointsGroupRef.current.children.length > 0) {
                         pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
                     }
                 }
             }
-            
-            // Remove polygon mesh and lines from the polygonGroup
+            // Remove polygon mesh and lines
             if (polygonGroupRef.current) {
                 // Remove the polygon mesh (assumed to be the last child added)
                 if (polygonGroupRef.current.children.length > 0) {
                     polygonGroupRef.current.remove(polygonGroupRef.current.children[polygonGroupRef.current.children.length - 1]);
                 }
-                
-                // Remove all the connecting lines (there are polygonPoints.length lines for a closed polygon)
+                // Remove all connecting lines
                 for (let i = 0; i < polygonPoints.length; i++) {
                     if (polygonGroupRef.current.children.length > 0) {
                         polygonGroupRef.current.remove(polygonGroupRef.current.children[polygonGroupRef.current.children.length - 1]);
                     }
                 }
             }
-            
-            // Update the state
             setPolygons(prev => prev.slice(0, -1));
-        }
-        else if (action.type === 'annotate') {
-            // Remove the annotation point
+        } else if (action.type === 'annotate') {
+            // Remove annotation point
             if (pointsGroupRef.current && pointsGroupRef.current.children.length > 0) {
                 pointsGroupRef.current.remove(pointsGroupRef.current.children[pointsGroupRef.current.children.length - 1]);
             }
-            
-            // Update the state
             setAnnotations(prev => prev.slice(0, -1));
-        }
-        else if (action.type === 'clear') {
-            // Restore the previous state before clear was called
+        } else if (action.type === 'clear') {
+            // Restore previous state before clear was called
             const previousState = action.data;
-            
-            // Restore measurements
-            previousState.measurements.forEach((measurement: Measurement) => {
-                const p1 = measurement.points[0];
-                const p2 = measurement.points[1];
-                
-                // Create points
-                const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                
-                const point1 = new THREE.Mesh(pointGeometry, pointMaterial);
-                point1.position.copy(p1);
-                pointsGroupRef.current?.add(point1);
-                
-                const point2 = new THREE.Mesh(pointGeometry, pointMaterial);
-                point2.position.copy(p2);
-                pointsGroupRef.current?.add(point2);
-                
-                // Create line for measurement
-                const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-                const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-                const line = new THREE.Line(lineGeometry, lineMaterial);
-                measureLinesRef.current?.add(line);
-            });
-            
-            // Restore annotations
-            previousState.annotations.forEach((annotation: Annotation) => {
-                const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-                const point = new THREE.Mesh(pointGeometry, pointMaterial);
-                point.position.copy(annotation.position);
-                pointsGroupRef.current?.add(point);
-            });
-            
-            // Restore polygons
-            previousState.polygons.forEach((polygon: THREE.Vector3[]) => {
-                // Create points for polygon
-                const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-                const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                
-                polygon.forEach((point: THREE.Vector3) => {
-                    const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
-                    pointMesh.position.copy(point);
-                    pointsGroupRef.current?.add(pointMesh);
-                });
-                
-                // Create lines for polygon
-                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-                
-                for (let i = 0; i < polygon.length; i++) {
-                    const p1 = polygon[i];
-                    const p2 = polygon[(i + 1) % polygon.length];
-                    
-                    const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-                    const line = new THREE.Line(lineGeometry, lineMaterial);
-                    polygonGroupRef.current?.add(line);
-                }
-                
-                // Create polygon shape
-                const polygonShape = new THREE.Shape();
-                polygonShape.moveTo(polygon[0].x, polygon[0].y);
-                
-                for (let i = 1; i < polygon.length; i++) {
-                    polygonShape.lineTo(polygon[i].x, polygon[i].y);
-                }
-                
-                // Close the polygon
-                polygonShape.lineTo(polygon[0].x, polygon[0].y);
-                
-                const polygonGeometry = new THREE.ShapeGeometry(polygonShape);
-                const polygonMaterial = new THREE.MeshBasicMaterial({
-                    color: 0x00ff00,
-                    transparent: true,
-                    opacity: 0.3,
-                    side: THREE.DoubleSide
-                });
-                
-                const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial);
-                polygonGroupRef.current?.add(polygonMesh);
-            });
-            
-            // Update state
-            setMeasurements(previousState.measurements);
-            setAnnotations(previousState.annotations);
-            setPolygons(previousState.polygons);
+            restoreState(previousState);
         }
-        
-        // Update history index
         setHistoryIndex(historyIndex - 1);
     };
 
     // Fixed handleRedo function
     const handleRedo = (): void => {
         if (historyIndex >= history.length - 1) return;
-        
         const action = history[historyIndex + 1];
-        
         if (action.type === 'measure') {
-            // Recreate the measurement
             const p1 = action.data.points[0];
             const p2 = action.data.points[1];
-            
             // Add points
             const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
             const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            
             const point1 = new THREE.Mesh(pointGeometry, pointMaterial);
             point1.position.copy(p1);
-            pointsGroupRef.current?.add(point1);
-            
             const point2 = new THREE.Mesh(pointGeometry, pointMaterial);
             point2.position.copy(p2);
+            pointsGroupRef.current?.add(point1);
             pointsGroupRef.current?.add(point2);
-            
             // Add line
             const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
             const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
             const line = new THREE.Line(lineGeometry, lineMaterial);
             measureLinesRef.current?.add(line);
-            
-            // Update state
             setPoints(prev => [...prev, p1, p2]);
             setMeasurements(prev => [...prev, action.data]);
-        }
-        else if (action.type === 'polygon') {
+        } else if (action.type === 'polygon') {
             const polygon = action.data.points;
-            
-            // Create points for polygon
+            // Add points for polygon
             const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
             const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            
             polygon.forEach((point: THREE.Vector3) => {
                 const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
                 pointMesh.position.copy(point);
                 pointsGroupRef.current?.add(pointMesh);
             });
-            
-            // Create lines for polygon
+            // Add lines for polygon
             const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-            
             for (let i = 0; i < polygon.length; i++) {
                 const p1 = polygon[i];
                 const p2 = polygon[(i + 1) % polygon.length];
-                
                 const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 polygonGroupRef.current?.add(line);
             }
-            
-            // Create polygon shape
+            // Add polygon shape
             const polygonShape = new THREE.Shape();
             polygonShape.moveTo(polygon[0].x, polygon[0].y);
-            
             for (let i = 1; i < polygon.length; i++) {
                 polygonShape.lineTo(polygon[i].x, polygon[i].y);
             }
-            
-            // Make sure we close the polygon
             polygonShape.lineTo(polygon[0].x, polygon[0].y);
-            
             const polygonGeometry = new THREE.ShapeGeometry(polygonShape);
             const polygonMaterial = new THREE.MeshBasicMaterial({
                 color: 0x00ff00,
@@ -431,53 +304,85 @@ export default function Page() {
                 opacity: 0.3,
                 side: THREE.DoubleSide
             });
-            
             const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial);
             polygonGroupRef.current?.add(polygonMesh);
-            
-            // Update state
             setPolygons(prev => [...prev, polygon]);
-        }
-        else if (action.type === 'annotate') {
-            // Create annotation point
+        } else if (action.type === 'annotate') {
+            const annotation = action.data;
+            // Add annotation point
             const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
             const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
             const point = new THREE.Mesh(pointGeometry, pointMaterial);
-            point.position.copy(action.data.position);
+            point.position.copy(annotation.position);
             pointsGroupRef.current?.add(point);
-            
-            // Update state
-            setAnnotations(prev => [...prev, action.data]);
+            setAnnotations(prev => [...prev, annotation]);
+        } else if (action.type === 'clear') {
+            clearAll();
         }
-        else if (action.type === 'clear') {
-            // Clear everything
-            if (pointsGroupRef.current) {
-                while (pointsGroupRef.current.children.length > 0) {
-                    pointsGroupRef.current.remove(pointsGroupRef.current.children[0]);
-                }
-            }
-            
-            if (measureLinesRef.current) {
-                while (measureLinesRef.current.children.length > 0) {
-                    measureLinesRef.current.remove(measureLinesRef.current.children[0]);
-                }
-            }
-            
-            if (polygonGroupRef.current) {
-                while (polygonGroupRef.current.children.length > 0) {
-                    polygonGroupRef.current.remove(polygonGroupRef.current.children[0]);
-                }
-            }
-            
-            // Update state
-            setPoints([]);
-            setMeasurements([]);
-            setAnnotations([]);
-            setPolygons([]);
-        }
-        
-        // Update history index
         setHistoryIndex(historyIndex + 1);
+    };
+    const restoreState = (state: { measurements: Measurement[]; annotations: Annotation[]; polygons: THREE.Vector3[][] }) => {
+        // Restore measurements
+        state.measurements.forEach((measurement: Measurement) => {
+            const p1 = measurement.points[0];
+            const p2 = measurement.points[1];
+            const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+            const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const point1 = new THREE.Mesh(pointGeometry, pointMaterial);
+            point1.position.copy(p1);
+            const point2 = new THREE.Mesh(pointGeometry, pointMaterial);
+            point2.position.copy(p2);
+            pointsGroupRef.current?.add(point1);
+            pointsGroupRef.current?.add(point2);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+            const line = new THREE.Line(lineGeometry, lineMaterial);
+            measureLinesRef.current?.add(line);
+        });
+        // Restore annotations
+        state.annotations.forEach((annotation: Annotation) => {
+            const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+            const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const point = new THREE.Mesh(pointGeometry, pointMaterial);
+            point.position.copy(annotation.position);
+            pointsGroupRef.current?.add(point);
+        });
+        // Restore polygons
+        state.polygons.forEach((polygon: THREE.Vector3[]) => {
+            // Add points for polygon
+            const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+            const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            polygon.forEach((point: THREE.Vector3) => {
+                const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
+                pointMesh.position.copy(point);
+                pointsGroupRef.current?.add(pointMesh);
+            });
+            // Add lines for polygon
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+            for (let i = 0; i < polygon.length; i++) {
+                const p1 = polygon[i];
+                const p2 = polygon[(i + 1) % polygon.length];
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                polygonGroupRef.current?.add(line);
+            }
+            // Add polygon shape
+            const polygonShape = new THREE.Shape();
+            polygonShape.moveTo(polygon[0].x, polygon[0].y);
+            for (let i = 1; i < polygon.length; i++) {
+                polygonShape.lineTo(polygon[i].x, polygon[i].y);
+            }
+            polygonShape.lineTo(polygon[0].x, polygon[0].y);
+            const polygonGeometry = new THREE.ShapeGeometry(polygonShape);
+            const polygonMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial);
+            polygonGroupRef.current?.add(polygonMesh);
+        });
     };
 
     const handleMeasurePoint = (point: THREE.Vector3): void => {
@@ -678,7 +583,7 @@ export default function Page() {
         setTempAnnotationPosition(null);
         setAnnotationText("");
     };
-    
+
     return (
         <div className="relative w-full h-screen">
             <div ref={mountRef} className="w-full h-full" />

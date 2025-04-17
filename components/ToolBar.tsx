@@ -1,5 +1,5 @@
 import { AnnotationMode } from "@/app/annotation/page";
-import { Hexagon, Menu, Redo, Ruler, StickyNote, Trash2, Undo, X } from "lucide-react";
+import { Hand, Hexagon, Menu, Redo, Ruler, StickyNote, Trash2, Undo, X } from "lucide-react";
 import { useState } from "react";
 
 export default function ToolBar({
@@ -37,6 +37,19 @@ export default function ToolBar({
           w-[90%] max-w-[450px] flex justify-between items-center gap-2 
           bg-gray-800/30 p-2 rounded-lg shadow-lg border border-gray-700 backdrop-blur-md"
       >
+        <button
+          onClick={() => setMode(null)}
+          className="flex items-center justify-center p-2 rounded-md transition-all 
+            bg-black text-white hover:bg-gray-700 cursor-pointer relative group"
+          title="Reset Mode"
+        >
+          <Hand className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 
+            bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity">
+             scroll
+          </span>
+        </button>
+
         <div
           className={`sm:hidden flex items-center justify-center px-3 py-2 rounded-md ${
             mode ? "bg-black text-white" : "bg-transparent"
