@@ -43,6 +43,7 @@ export default function Page() {
             geometricErrorMultiplier: 1.0,
             centerModel:true
         });
+         
 
         scene.add(ogc3DTile);
 

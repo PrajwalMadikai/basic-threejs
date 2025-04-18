@@ -48,4 +48,9 @@
 -Made the toolbar more compact and responsive: shows names on hover and uses toggle on small screens.
 -Partially implemented undo/redo: currently only points are removed, lines still remain (in progress).
 -Added a hand icon button to interact with the model after other operations.
- 
+
+ ## Day 5  - threedtiles
+
+ -ogc3DTile.tileLoader.setWorkerCount() Offload heavy computations to background threads.
+ -centerModel: used to center the model on the origin
+ - loading strategy: INTERMEDIATE, immediate is used to load the models
