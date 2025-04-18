@@ -952,7 +952,6 @@ export default function Page() {
                     const pointGeometry = new THREE.SphereGeometry(0.05, 16, 16);
                     const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
                     
-                    // Add points
                     points.forEach(point => {
                         const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
                         pointMesh.position.copy(point);
@@ -960,7 +959,6 @@ export default function Page() {
                         objects.push(pointMesh);
                     });
                     
-                    // Add lines
                     const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
                     for (let i = 0; i < points.length; i++) {
                         const p1 = points[i];
@@ -971,31 +969,24 @@ export default function Page() {
                         objects.push(line);
                     }
                     
-                    // Create a proper 3D polygon
                     if (points.length >= 3) {
-                        // Create a buffer geometry for the polygon
                         const polygonGeometry = new THREE.BufferGeometry();
                         
-                        // Create triangle faces for the polygon
                         const vertices = [];
                         const indices = [];
                         
-                        // Add vertices
                         for (let i = 0; i < points.length; i++) {
                             vertices.push(points[i].x, points[i].y, points[i].z);
                         }
                         
-                        // Create a simple triangulation (assuming convex polygon)
                         for (let i = 1; i < points.length - 1; i++) {
                             indices.push(0, i, i + 1);
                         }
                         
-                        // Set the vertices and indices
                         polygonGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
                         polygonGeometry.setIndex(indices);
                         polygonGeometry.computeVertexNormals();
                         
-                        // Create material and mesh
                         const polygonMaterial = new THREE.MeshBasicMaterial({
                             color: 0x00ff00,
                             transparent: true,
