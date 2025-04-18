@@ -43,3 +43,9 @@
                    onTouchEnd: is used to calculates touch position
                    createCube : is used to create different color cube each time
                   
+## Day 4
+
+-Made the toolbar more compact and responsive: shows names on hover and uses toggle on small screens.
+-Partially implemented undo/redo: currently only points are removed, lines still remain (in progress).
+-Added a hand icon button to interact with the model after other operations.
+ 
