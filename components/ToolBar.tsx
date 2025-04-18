@@ -1,5 +1,5 @@
 import { AnnotationMode } from "@/app/annotation/page";
-import { Hand, Hexagon, Menu, Redo, Ruler, StickyNote, Trash2, Undo, X } from "lucide-react";
+import { Download, Hand, Hexagon, Menu, Redo, Ruler, StickyNote, Trash2, Undo, Upload, X } from "lucide-react";
 import { useState } from "react";
 
 export default function ToolBar({
@@ -8,12 +8,16 @@ export default function ToolBar({
   mode,
   canUndo = false,
   canRedo = false,
+  exportToJson,
+  importFromJson
 }: {
   setMode: (value: AnnotationMode) => void;
   clearAll: () => void;
   mode: AnnotationMode;
   canUndo?: boolean;
   canRedo?: boolean;
+  exportToJson: () => void;
+  importFromJson: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -46,14 +50,13 @@ export default function ToolBar({
           <Hand className="w-4 h-4 sm:w-5 sm:h-5" />
           <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 
             bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity">
-             scroll
+            scroll
           </span>
         </button>
 
         <div
-          className={`sm:hidden flex items-center justify-center px-3 py-2 rounded-md ${
-            mode ? "bg-black text-white" : "bg-transparent"
-          }`}
+          className={`sm:hidden flex items-center justify-center px-3 py-2 rounded-md ${mode ? "bg-black text-white" : "bg-transparent"
+            }`}
           title={mode ? mode.charAt(0).toUpperCase() + mode.slice(1) : "Select Mode"}
         >
           {getActiveModeIcon()}
@@ -91,6 +94,7 @@ export default function ToolBar({
                 Undo
               </span>
             </button>
+
             <button
               onClick={() => {
                 setMode("redo");
@@ -108,6 +112,7 @@ export default function ToolBar({
                 Redo
               </span>
             </button>
+
             <button
               onClick={() => {
                 setMode("measure");
@@ -123,6 +128,7 @@ export default function ToolBar({
                 Measure
               </span>
             </button>
+
             <button
               onClick={() => {
                 setMode("polygon");
@@ -138,6 +144,7 @@ export default function ToolBar({
                 Polygon
               </span>
             </button>
+
             <button
               onClick={() => {
                 setMode("annotate");
@@ -153,6 +160,7 @@ export default function ToolBar({
                 Annotate
               </span>
             </button>
+
             <button
               onClick={() => {
                 clearAll();
@@ -242,6 +250,36 @@ export default function ToolBar({
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="absolute top-5 right-4 flex gap-2">
+        <button
+          onClick={exportToJson}
+          className="flex items-center justify-center p-2 rounded-md transition-all 
+      bg-black text-white hover:bg-gray-700 cursor-pointer relative group"
+          title="Export Annotations"
+        >
+          <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="absolute bottom-full right-0 mt-4 px-2 py-1 
+      bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Export Annotations
+          </span>
+        </button>
+
+        <label className="flex items-center justify-center p-3 rounded-md transition-all 
+    bg-black text-white hover:bg-gray-700 cursor-pointer relative group">
+          <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
+          <input
+            type="file"
+            accept=".json"
+            onChange={importFromJson}
+            className="hidden"
+          />
+          <span className="absolute bottom-full right-0 mt-4 px-2 py-1 
+      bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Import Annotations
+          </span>
+        </label>
       </div>
     </div>
   );
