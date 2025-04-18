@@ -18,7 +18,7 @@ export default function Page() {
             1000
         );
         scene.add(camera);
-        camera.position.z = 5;
+        camera.position.z = 20;
 
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -38,8 +38,10 @@ export default function Page() {
         scene.add(directionalLight);
 
         const ogc3DTile = new OGC3DTile({
-            url: 'https://stream.api.theun1t.com/cache-models/wH3P4TR3eu9SBdRB6l-oQ/tileset.json',  
+            url: 'https://storage.googleapis.com/ogc-3d-tiles/droneship/tileset.json',  
             renderer: renderer,
+            geometricErrorMultiplier: 1.0,
+            centerModel:true
         });
 
         scene.add(ogc3DTile);
